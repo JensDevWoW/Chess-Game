@@ -8,11 +8,12 @@ board = [[' ' for i in range(8)] for i in range(8)]
 board_sim = [[' ' for i in range(8)] for i in range(8)]
 
 class Team:
-    def __init__(self, colour, piece_list = [], possible_moves = [], in_check = False):
+    def __init__(self, colour, piece_list = [], possible_moves = [], in_check = False, King = ' '):
         self.colour = colour
         self.piece_list = piece_list
         self.in_check = in_check
         self.possible_moves = possible_moves
+        self.King = King
     
     def update_piece_list(self, original_piece, new_piece):
         current_piece = self.piece_list.index(original_piece)
@@ -25,12 +26,13 @@ white_team = Team('w')
 black_team = Team('b')
 
 class Piece:
-    def __init__(self, team, type, image, add = True, Killable=False, has_moved=False):
+    def __init__(self, team, type, image, add = True, Killable=False, has_moved=False, available_moves = []):
         self.team = team
         self.type = type
         self.Killable = Killable
         self.image = pygame.image.load(image)
         self.image = pygame.transform.scale(self.image, (100,100))
+        self.available_moves = available_moves
         if add:
             if team == white_team:
                 white_team.piece_list.append(self)
@@ -218,33 +220,36 @@ def select_moves(piece, index, moves, team):
     print(piece.type)
     if piece.type == 'p':
         if piece.team == black_team:
-            pawn_moves_b(index)
+            pawn_moves_b(piece, index)
         else:
             print("tried doing pawn")
-            pawn_moves_w(index)
+            pawn_moves_w(piece, index)
         
     if piece.type == 'k':
-        king_moves(index, team)
+        king_moves(piece, index, team)
     
     if piece.type == 'r':
-        rook_moves(index, team)
+        rook_moves(piece, index, team)
     
     if piece.type == 'b':
-        bishop_moves(index, team)
+        bishop_moves(piece, index, team)
     
     if piece.type == 'q':
-        queen_moves(index, team)
+        queen_moves(piece, index, team)
     
     if piece.type == 'kn':
-        knight_moves(index, team)
+        knight_moves(piece, index, team)
         
-    return team.possible_moves
+    return piece.available_moves
 
 def team_lost(team, board, grid):     # Check if this particular team has any moves left that don't put him into check again, if so: lost
+    team_king_pos = []
     for i in range(len(board)):
         for j in range(len(board[0])):
             piece = board[i][j]
             piece_pos = [i,j]
+            if piece.type == 'k' and piece.team == team:
+                team_king_pos = piece_pos
             if piece.type == 'p' and piece.team == white_team:
                 pawn_moves_w(piece_pos, team)
             if piece.type == 'p' and piece.team == black_team:
@@ -258,6 +263,16 @@ def team_lost(team, board, grid):     # Check if this particular team has any mo
                 knight_moves(piece_pos, team)
             if piece.type == 'q':
                 queen_moves(piece_pos, team)
+    
+    current_board = board
+    
+    for move in team.possible_moves:
+        x,y = move[0][1]
+        row, col = team_king_pos[0][1]
+        Do_Move(board, x, y, row, col, (col, row), (y, x), WIN)
+        if check_king(team, board, grid) == True:
+            board = current_board
+            print("Still in check, rerun!")
     
     ## We need to calculate if any of our available moves gets us out of check
     ## Best way to do that is: 
@@ -303,13 +318,14 @@ def check_king(team, board, grid):                   # Check if certain team's k
     return False
     
 
-def pawn_moves_b(index):
+def pawn_moves_b(piece, index):
     pawnRow = index[0]
     pawnColumn = index[1]
     if pawnRow == 1:
         if board[pawnRow + 2][pawnColumn] == ' ' and board[pawnRow + 1][pawnColumn] == ' ': 
-            black_team.possible_moves.append([pawnRow + 2, pawnColumn])
-            black_team.possible_moves.append([pawnRow + 1, pawnColumn])
+            piece.available_moves.append([pawnRow + 2, pawnColumn])
+            piece.available_moves.append([pawnRow + 1, pawnColumn])
+            
     bottom3 = [[pawnRow + 1, pawnColumn + i] for i in range(-1, 2)] 
     
     ## Example position [1, -1]
@@ -319,21 +335,21 @@ def pawn_moves_b(index):
                 try:
                     if board[position[0]][position[1]].team != black_team:
                         board[position[0]][position[1]].Killable = True
-                        black_team.possible_moves.append([position[0], position[1]])
+                        piece.available_moves.append([position[0], position[1]])
                 except:
                     pass
             else:
                 if board[position[0]][position[1]] == ' ':
-                    black_team.possible_moves.append([position[0], position[1]])
-    return black_team.possible_moves
+                    piece.available_moves.append([position[0], position[1]])
+    return piece.available_moves
 
-def pawn_moves_w(index):
+def pawn_moves_w(piece, index):
     pawn_row = index[0]
     pawn_column = index[1]
     if pawn_row == 6:
         if board[pawn_row - 2][pawn_column] == ' ' and board[pawn_row - 1][pawn_column] == ' ':
-                white_team.possible_moves.append([pawn_row - 2,pawn_column])
-                white_team.possible_moves.append([pawn_row - 1,pawn_column])
+                piece.available_moves.append([pawn_row - 2, pawn_column])
+                piece.available_moves.append([pawn_row - 1, pawn_column])
     top3 = [[pawn_row - 1, pawn_column + i] for i in range(-1, 2)]
     
     for position in top3:
@@ -342,30 +358,30 @@ def pawn_moves_w(index):
                 try:
                     if board[position[0]][position[1]].team != white_team:
                         board[position[0]][position[1]].Killable = True
-                        white_team.possible_moves.append([position[0],position[1]])
+                        piece.available_moves.append([position[0], position[1]])
                 except:
                     pass
             else:
                 if board[position[0]][position[1]] == ' ':
-                    white_team.possible_moves.append([position[0],position[1]])
-    return white_team.possible_moves
+                    piece.available_moves.append([position[0], position[1]])
+    return piece.available_moves
     
 
-def king_moves(index, team):
+def king_moves(piece, index, team):
     king_row = index[0] ## Starting king row: 0
     king_column = index[1] ## Starting king column: 4
     for y in range(3): ## Example: 1
         for x in range(3): ## Example: 0
             if on_board((king_row - 1 + y, king_column - 1 + x)): ## Example: 0,3
                 if board[king_row - 1 + y][king_column - 1 + x] == ' ':
-                    team.possible_moves.append([king_row - 1 + y, king_column - 1 + x])
+                    piece.available_moves.append([king_row - 1 + y, king_column - 1 + x])
                 else:
                     if board[king_row - 1 + y][king_column - 1 + x].team != board[king_row][king_column].team: ## Check if piece is on my team
                         board[king_row - 1 + y][king_column - 1 + x].Killable = True ## If not, allow the king to take it
-                        team.possible_moves.append([king_row - 1 + y, king_column - 1 + x])
-    return team.possible_moves
+                        piece.available_moves.append([king_row - 1 + y, king_column - 1 + x])
+    return piece.available_moves
         
-def rook_moves(index, team):
+def rook_moves(piece, index, team):
     cross = [[[index[0] + i, index[1]] for i in range(1, 8 - index[0])],
              [[index[0] - i, index[1]] for i in range(1, index[0] + 1)],
              [[index[0], index[1] + i] for i in range(1, 8 - index[1])],
@@ -374,15 +390,15 @@ def rook_moves(index, team):
         for position in direction:
             if on_board(position):
                 if board[position[0]][position[1]] == ' ':
-                    team.possible_moves.append([position[0], position[1]])
+                    piece.available_moves.append([position[0], position[1]])
                 else:
                     if board[position[0]][position[1]].team.colour != team.colour:
                         board[position[0]][position[1]].Killable = True
-                        team.possible_moves.append([position[0], position[1]])
+                        piece.available_moves.append([position[0], position[1]])
                     break
-    return team.possible_moves
+    return piece.available_moves
 
-def bishop_moves(index, team):
+def bishop_moves(piece, index, team):
     diagonals = [[[index[0] + i, index[1] + i] for i in range(1, 8)],
                  [[index[0] + i, index[1] - i] for i in range(1, 8)],
                  [[index[0] - i, index[1] + i] for i in range(1, 8)],
@@ -392,36 +408,65 @@ def bishop_moves(index, team):
         for position in direction:
             if on_board(position):
                 if board[position[0]][position[1]] == ' ':
-                    team.possible_moves.append([position[0], position[1]])
+                    piece.available_moves.append([position[0], position[1]])
                 else:
                     if board[position[0]][position[1]].team.colour != board[index[0]][index[1]].team.colour:
                         board[position[0]][position[1]].Killable = True
-                        team.possible_moves.append([position[0], position[1]])
+                        piece.available_moves.append([position[0], position[1]])
                     break
-    return team.possible_moves
+    return piece.available_moves
 
-def queen_moves(index, team):
-    rook_moves(index, team)
-    bishop_moves(index, team)
-    return team.possible_moves
+def queen_moves(piece, index, team):
+    cross = [[[index[0] + i, index[1]] for i in range(1, 8 - index[0])],
+             [[index[0] - i, index[1]] for i in range(1, index[0] + 1)],
+             [[index[0], index[1] + i] for i in range(1, 8 - index[1])],
+             [[index[0], index[1] - i] for i in range(1, index[1] + 1)]]
+    diagonals = [[[index[0] + i, index[1] + i] for i in range(1, 8)],
+                 [[index[0] + i, index[1] - i] for i in range(1, 8)],
+                 [[index[0] - i, index[1] + i] for i in range(1, 8)],
+                 [[index[0] - i, index[1] - i] for i in range(1, 8)]]
+    for direction in cross:
+        for position in direction:
+            if on_board(position):
+                if board[position[0]][position[1]] == ' ':
+                    piece.available_moves.append([position[0], position[1]])
+                else:
+                    if board[position[0]][position[1]].team.colour != team.colour:
+                        board[position[0]][position[1]].Killable = True
+                        piece.available_moves.append([position[0], position[1]])
+                    break
+    for direction in diagonals:
+        for position in direction:
+            if on_board(position):
+                if board[position[0]][position[1]] == ' ':
+                    piece.available_moves.append([position[0], position[1]])
+                else:
+                    if board[position[0]][position[1]].team.colour != board[index[0]][index[1]].team.colour:
+                        board[position[0]][position[1]].Killable = True
+                        piece.available_moves.append([position[0], position[1]])
+                    break
+    return piece.available_moves
 
-def knight_moves(index, team):
+def knight_moves(piece, index, team):
     for i in range(-2, 3):
         for j in range(-2, 3):
             if i ** 2 + j ** 2 == 5:
                 if on_board((index[0] + i, index[1] + j)):
                     if board[index[0] + i][index[1] + j] == ' ':
-                        team.possible_moves.append([index[0] + i, index[1] + j])
+                        piece.available_moves.append([index[0] + i, index[1] + j])
                     else:
                         if board[index[0] + i][index[1] + j].team.colour != team.colour:
                             board[index[0] + i][index[1] + j].Killable = True
-                            team.possible_moves.append([index[0] + i, index[1] + j])
+                            piece.available_moves.append([index[0] + i, index[1] + j])
     return team.possible_moves
 
-def empty_moveList():
+def empty_teamMoveList():
     white_team.possible_moves.clear()
     black_team.possible_moves.clear()
 
+def empty_pieceMoveList(piece):
+    piece.available_moves.clear()
+    
 WIDTH = 800
 
 WIN = pygame.display.set_mode((WIDTH, WIDTH))
@@ -517,6 +562,7 @@ def main(WIN, WIDTH):
     piece_to_move=[]
     grid = make_grid(8, WIDTH)
     turn = white_team
+    selected_piece = ' '
     while True:
         pygame.time.delay(50) ## Stops CPU dying
         for event in pygame.event.get():
@@ -527,40 +573,43 @@ def main(WIN, WIDTH):
                 pos = pygame.mouse.get_pos()
                 x, y = Find_Node(pos, WIDTH)
                 if selected == False:
-                    if board[x][y] == ' ':
+                    selected_piece = board[x][y]
+                    if selected_piece == ' ':
                         pass
                     else:
-                        if board[x][y].team == turn:
-                            possible = select_moves((board[x][y]), (x, y), moves, turn)
+                        if selected_piece.team == turn:
+                            possible = select_moves(selected_piece, (x, y), moves, turn)
                             for position in possible:
                                 row, col = position
                                 grid[row][col].colour = BLUE
                             piece_to_move = x,y
                             selected = True
                         else:
+                            selected_piece = []
                             piece_to_move = []
                             print('Can\'t select')
                         #print(piece_to_move)
                 else:
-                    if [x,y] in turn.possible_moves:
+                    if [x,y] in selected_piece.available_moves:
                         row, col = piece_to_move
                         deselect()
                         remove_highlight(grid)
-                        empty_moveList()
+                        empty_pieceMoveList(selected_piece)
                         Do_Move(board, x, y, row, col, (col, row), (y, x), WIN)
                         moves += 1
-                        in_check = check_king(turn, board, grid)
+                        #in_check = check_king(turn, board, grid)
                         if turn == white_team:
                             turn = black_team
                         else:
                             turn = white_team
-                        turn.in_check = in_check
-                        print(in_check)
+                        #turn.in_check = in_check
+                        #print(in_check)
                        # print(convert_to_readable(board))
                     else:
                         deselect()
                         remove_highlight(grid)
                         selected = False
+                        selected_piece = []
                         print("Invalid move")
                     selected = False
                     
