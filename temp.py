@@ -445,11 +445,11 @@ class Node:
         pygame.draw.rect(WIN, self.colour, (self.x, self.y, WIDTH / 8, WIDTH / 8))
         
     def setup(self, board, WIN):
-        if board[self.col][self.row]:
+        if board[self.row][self.col]:
             if board[self.col][self.row] == ' ':
                 pass
             else:
-                WIN.blit(board[self.col][self.row].image, (self.y, self.x))
+                WIN.blit(board[self.col][self.row].image, (self.x, self.y))
                 
                 
 def make_grid(rows, width):
