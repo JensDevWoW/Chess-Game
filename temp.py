@@ -368,7 +368,18 @@ def team_lost(team, board, grid):     # Check if this particular team has any mo
         
 
 def check_king(team, board, grid):                   # Check if certain team's king is under attack
-    
+    if team.colour == 'w':
+        for piece in white_team.piece_list:
+            for move in piece.available_moves:
+                print(move)
+                if move == black_team.King.position:
+                    return True
+    else:
+        for piece in black_team.piece_list:
+            for move in piece.available_moves:
+                if move == white_team.King.position:
+                    return True
+
     return False
 
 def update_moveSet(board):
@@ -510,18 +521,16 @@ def main(WIN, WIDTH):
                         row, col = piece_to_move
                         deselect()
                         remove_highlight(grid)
-                        empty_pieceMoveList(selected_piece)
                         Do_Move(board,selected_piece, x, y, row, col, (col, row), (y, x), WIN)
                         moves += 1
-                        #in_check = check_king(turn, board, grid)
+                        update_moveSet(board)
+                        in_check = check_king(turn, board, grid)
                         if turn == white_team:
                             turn = black_team
                         else:
                             turn = white_team
-                            
-                        update_moveSet(board)
-                        #turn.in_check = in_check
-                        #print(in_check)
+                        turn.in_check = in_check
+                        print(in_check)
                        # print(convert_to_readable(board))
                     else:
                         deselect()
