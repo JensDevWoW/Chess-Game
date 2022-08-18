@@ -367,8 +367,7 @@ def team_lost(team, board, grid):     # Check if this particular team has any mo
     #for move in team.possible_moves:
         
 
-def check_king(team, board, grid):                   # Check if certain team's king is under attack
-    
+def check_king(team, board, grid):                   # Check if certain team's king is under atta
     return False
 
 def update_moveSet(board):

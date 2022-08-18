@@ -1,0 +1,1 @@
+{'C:\\Users\\jorda\\.spyder-py3\\temp.py': 'C:\\Users\\jorda\\.spyder-py3\\autosave\\temp.py'}
