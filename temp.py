@@ -5,18 +5,28 @@ import time
 import sys
 
 class Board:
-    def __init__(self, simulated):
+    def __init__(self, simulated, white, black, grid, WIN, WIDTH):
         self.move_log = []
         self.simulated = simulated
-        self.grid = [[' ' for i in range(8)] for i in range(8)]
-        self.starting_order = {(0, 0): Piece(black_team, 'r', 'b_rook.png', [], False), (0, 1): Piece(black_team, 'kn', 'b_knight.png', [], False),
-                          (0, 2): Piece(black_team, 'b', 'b_bishop.png', [], False), (0, 4): Piece(black_team, 'k', 'b_king.png', [], False),
-                          (0, 3): Piece(black_team, 'q', 'b_queen.png', [], False), (0, 5): Piece(black_team, 'b', 'b_bishop.png', [], False),
-                          (0, 6): Piece(black_team, 'kn', 'b_knight.png', [], False), (0, 7): Piece(black_team, 'r', 'b_rook.png', [], False),
-                          (1, 0): Piece(black_team, 'p', 'b_pawn.png', [], False), (1, 1): Piece(black_team, 'p', 'b_pawn.png', [], False),
-                          (1, 2): Piece(black_team, 'p', 'b_pawn.png', [], False), (1, 3): Piece(black_team, 'p', 'b_pawn.png', [], False),
-                          (1, 4): Piece(black_team, 'p', 'b_pawn.png', [], False), (1, 5): Piece(black_team, 'p', 'b_pawn.png', [], False),
-                          (1, 6): Piece(black_team, 'p', 'b_pawn.png', [], False), (1, 7): Piece(black_team, 'p', 'b_pawn.png', [], False),
+        self.last_moved_piece = []
+        self.matrix = [[' ' for i in range(8)] for i in range(8)]
+        self.last_position = []
+        self.this_position = []
+        self.white = white
+        self.black = black
+        self.WIDTH = WIDTH
+        self.grid = grid
+        self.WIN = WIN
+        self.moves = 0
+        self.current_turn = None
+        self.starting_order = {(0, 0): Piece(self.black, 'r', 'b_rook.png', [], False), (0, 1): Piece(self.black, 'kn', 'b_knight.png', [], False),
+                          (0, 2): Piece(self.black, 'b', 'b_bishop.png', [], False), (0, 4): Piece(self.black, 'k', 'b_king.png', [], False),
+                          (0, 3): Piece(self.black, 'q', 'b_queen.png', [], False), (0, 5): Piece(self.black, 'b', 'b_bishop.png', [], False),
+                          (0, 6): Piece(self.black, 'kn', 'b_knight.png', [], False), (0, 7): Piece(self.black, 'r', 'b_rook.png', [], False),
+                          (1, 0): Piece(self.black, 'p', 'b_pawn.png', [], False), (1, 1): Piece(self.black, 'p', 'b_pawn.png', [], False),
+                          (1, 2): Piece(self.black, 'p', 'b_pawn.png', [], False), (1, 3): Piece(self.black, 'p', 'b_pawn.png', [], False),
+                          (1, 4): Piece(self.black, 'p', 'b_pawn.png', [], False), (1, 5): Piece(self.black, 'p', 'b_pawn.png', [], False),
+                          (1, 6): Piece(self.black, 'p', 'b_pawn.png', [], False), (1, 7): Piece(self.black, 'p', 'b_pawn.png', [], False),
 
                           (2, 0): ' ', (2, 1): ' ', (2, 2): ' ', (2, 3): ' ',
                           (2, 4): ' ', (2, 5): ' ', (2, 6): ' ', (2, 7): ' ',
@@ -27,86 +37,96 @@ class Board:
                           (5, 0): ' ', (5, 1): ' ', (5, 2): ' ', (5, 3): ' ',
                           (5, 4): ' ', (5, 5): ' ', (5, 6): ' ', (5, 7): ' ',
 
-                          (6, 0): Piece(white_team, 'p', 'w_pawn.png', [], False), (6, 1): Piece(white_team, 'p', 'w_pawn.png', [], False),
-                          (6, 2): Piece(white_team, 'p', 'w_pawn.png', [], False), (6, 3): Piece(white_team, 'p', 'w_pawn.png', [], False),
-                          (6, 4): Piece(white_team, 'p', 'w_pawn.png', [], False), (6, 5): Piece(white_team, 'p', 'w_pawn.png', [], False),
-                          (6, 6): Piece(white_team, 'p', 'w_pawn.png', [], False), (6, 7): Piece(white_team, 'p', 'w_pawn.png', [], False),
-                          (7, 0): Piece(white_team, 'r', 'w_rook.png', [], False), (7, 1): Piece(white_team, 'kn', 'w_knight.png', [], False),
-                          (7, 2): Piece(white_team, 'b', 'w_bishop.png', [], False), (7, 3): Piece(white_team, 'q', 'w_queen.png', [], False),
-                          (7, 4): Piece(white_team, 'k', 'w_king.png', [], False), (7, 5): Piece(white_team, 'b', 'w_bishop.png', [], False),
-                          (7, 6): Piece(white_team, 'kn', 'w_knight.png', [], False), (7, 7): Piece(white_team, 'r', 'w_rook.png', [], False),}
+                          (6, 0): Piece(self.white, 'p', 'w_pawn.png', [], False), (6, 1): Piece(self.white, 'p', 'w_pawn.png', [], False),
+                          (6, 2): Piece(self.white, 'p', 'w_pawn.png', [], False), (6, 3): Piece(self.white, 'p', 'w_pawn.png', [], False),
+                          (6, 4): Piece(self.white, 'p', 'w_pawn.png', [], False), (6, 5): Piece(self.white, 'p', 'w_pawn.png', [], False),
+                          (6, 6): Piece(self.white, 'p', 'w_pawn.png', [], False), (6, 7): Piece(self.white, 'p', 'w_pawn.png', [], False),
+                          (7, 0): Piece(self.white, 'r', 'w_rook.png', [], False), (7, 1): Piece(self.white, 'kn', 'w_knight.png', [], False),
+                          (7, 2): Piece(self.white, 'b', 'w_bishop.png', [], False), (7, 3): Piece(self.white, 'q', 'w_queen.png', [], False),
+                          (7, 4): Piece(self.white, 'k', 'w_king.png', [], False), (7, 5): Piece(self.white, 'b', 'w_bishop.png', [], False),
+                          (7, 6): Piece(self.white, 'kn', 'w_knight.png', [], False), (7, 7): Piece(self.white, 'r', 'w_rook.png', [], False),}
         for i in range(8):
             for j in range(8):
-                self.grid[i][j] = self.starting_order[i,j]
-                if self.grid[i][j] != ' ':
-                    self.grid[i][j].position = [i,j]
+                self.matrix[i][j] = self.starting_order[i,j]
+                if self.matrix[i][j] != ' ':
+                    self.matrix[i][j].position = [i,j]
         
         if simulated != True: 
             for i in range(8):
                 for g in range(8):
-                    if self.grid[i][g] != ' ':
-                        if self.grid[i][g].team == white_team:
-                            white_team.piece_list.append(self.grid[i][g])
+                    if self.matrix[i][g] != ' ':
+                        if self.matrix[i][g].team == self.white:
+                            self.white.piece_list.append(self.matrix[i][g])
                         else:
-                            black_team.piece_list.append(self.grid[i][g])
-                      
+                            self.black.piece_list.append(self.matrix[i][g])
     def on_board(self, position):
         if position[0] > -1 and position[1] > -1 and position[0] < 8 and position[1] < 8:
             return True
     
     def deselect(self):
-        for row in range(len(self.grid)):
-            for column in range(len(self.grid[0])):
-                if self.grid[row][column] == 'x ':
-                    self.grid[row][column] = ' '
+        for row in range(len(self.matrix)):
+            for column in range(len(self.matrix[0])):
+                if self.matrix[row][column] == 'x ':
+                    self.matrix[row][column] = ' '
                 else:
                     try:
-                        self.grid[row][column].Killable = False
+                        self.matrix[row][column].Killable = False
                     except:
                         pass
-    def Do_Move(self, piece, x, y, row, col, OriginalPos, FinalPosition, WIN):
+    def Do_Move(self, piece, x, y, row, col, WIN, grid, simulated):
         piece.position = [x,y]
-        self.grid[x][y] = self.grid[row][col]
-        self.grid[row][col] = ' '
+        if self.matrix[x][y] != ' ':      # Taking a piece
+            for taken_piece in self.matrix[x][y].team.piece_list:
+                if taken_piece.type == 'p' and taken_piece == self.matrix[x][y]:
+                    self.matrix[x][y].team.piece_list.remove(taken_piece)
+        self.last_position = [row, col]
+        self.this_position = [x, y]
+        self.last_moved_piece = piece
+        self.matrix[x][y] = self.matrix[row][col]
+        self.matrix[row][col] = ' '
         square = square_names[x,y]
-        if piece.type != 'p':
-            self.move_log.append(piece.type + square)
-            print(piece.type + square)
-        else:
-            self.move_log.append(square)
-            print(square)
+        if simulated == False:
+            if piece.type != 'p':
+                self.move_log.append(piece.type + square)
+            else:
+                self.move_log.append(square)
     def check_team(self, moves, index):
         row, col = index
         if moves%2 == 0:
-            if self.grid[row][col].team == white_team:
-                return True, white_team
+            if self.matrix[row][col].team == self.white:
+                return True, self.white
         else:
-            if self.grid[row][col].team == black_team:
-                return True, black_team
-    def check_king(self, team, grid):                   # Check if certain team's king is under attack
-        if team.colour == 'w':
-            for piece in white_team.piece_list:
-                for move in piece.available_moves:
-                    if move == black_team.King.position:
-                        return True
-        else:
-            for piece in black_team.piece_list:
-                for move in piece.available_moves:
-                    if move == white_team.King.position:
-                        return True
-
-        return False
-
-    def update_moveSet(self):
-        for i in range(len(self.grid)):
-            for j in range(len(self.grid[0])):
-                if self.grid[i][j] != ' ':
-                    self.empty_pieceMoveList(self.grid[i][j])
-                    self.grid[i][j].getMoves(self)
+            if self.matrix[row][col].team == self.black:
+                return True, self.black
+    def Reverse_Move(self, piece, sim):
+        x,y = self.this_position
+        row,col = self.last_position
+        self.matrix[row][col] = piece
+        self.matrix[x][y] = ' '
+        piece.position = [row,col]
+        self.moves = self.moves - 1
+        self.update_moveSet()
+        if sim != True:
+            if self.current_turn == self.white:
+                self.current_turn = self.black
+            else:
+                self.current_turn = self.white
         
+    def update_moveSet(self):
+        for i in range(len(self.matrix)):
+            for j in range(len(self.matrix[0])):
+                if self.matrix[i][j] != ' ':
+                    self.empty_pieceMoveList(self.matrix[i][j])
+                    self.matrix[i][j].getMoves(self)
+    def clear_moveSet(self):
+        for i in range(len(self.matrix)):
+            for j in range(len(self.matrix[0])):
+                if self.matrix[i][j] != ' ':
+                    self.empty_pieceMoveList(self.matrix[i][j])
+                        
     def empty_teamMoveList(self):
-        white_team.possible_moves.clear()
-        black_team.possible_moves.clear()
+        self.white.possible_moves.clear()
+        self.black.possible_moves.clear()
 
     def empty_pieceMoveList(self, piece):
         piece.available_moves.clear()
@@ -126,36 +146,50 @@ class Team:
     def empty_possible_moves(self):
         self.possible_moves.clear()
         
-    def get_legalMoves(self, board, grid):
+    def check_king(self, other_team, grid):                   # Check if certain team's king is under attack
+        for piece in self.piece_list:
+            for move in piece.available_moves:
+                if move == other_team.King.position:
+                    return True
+        return False    
+    def get_team(self):
+        return self
+    
+    def update_moveSet(self, board):
+        for i in range(len(board.matrix)):
+            for j in range(len(board.matrix[0])):
+                if board.matrix[i][j] != ' ':
+                    if board.matrix[i][j].team == self:
+                        board.empty_pieceMoveList(board.matrix[i][j])
+                        board.matrix[i][j].getMoves(board)
+        
+    def get_legalMoves(self, piece, board, team1, team2, sim_team1, sim_team2, grid, WIN):
         # This happens when we are in check
         # Check to see which moves we can make to get out of check, if there are none, game is over
         # Very inefficient way to do this, I will add the right way later
-        OriginalPosition = board
-        for piece in self.piece_list:
-            for move in piece.available_moves:
-                Do_Move(board, piece, move[0], move[1], piece.position[0], piece.position[1], piece.position, move, None)
-                update_moveSet(board)
-                if check_king(self, board, grid) == True:
-                    print("still in check!")
-                    return False
-                else:
-                    UnDo_Move(board, move)
-                    continue
-
-white_team = Team('w', [], [], False, ' ')
-black_team = Team('b', [], [], False, ' ')
-white_team_sim = Team('w', [], [], False, ' ')
-black_team_sim = Team('w', [], [], False, ' ')
-
+        moves_to_remove = []
+        for move in reversed(piece.available_moves):
+            board.Do_Move(piece, move[0], move[1], piece.position[0], piece.position[1], None, grid, False)
+            team2.update_moveSet(board)
+            if team2.check_king(team1, grid) == True:
+                board.Reverse_Move(piece, True)
+                moves_to_remove.append(move)
+            else:
+                board.Reverse_Move(piece, True)
+                continue
+            
+        for move in reversed(piece.available_moves):
+            if move in moves_to_remove:
+                piece.available_moves.remove(move)
 class Piece:
-    def __init__(self, team, type, image, available_moves, add = True, Killable=False, has_moved=False, position = []):
+    def __init__(self, team, type, image, available_moves, add = True, Killable=False, has_moved=False):
         self.team = team
         self.type = type
         self.Killable = Killable
         self.image = pygame.image.load(image)
         self.image = pygame.transform.scale(self.image, (100,100))
         self.available_moves = available_moves
-        self.position = position
+        self.position = []
         if self.type == 'k':
             self.team.King = self
             if self.team.colour == 'w':
@@ -163,10 +197,7 @@ class Piece:
             else:
                 self.position = [0,4]
         if add:
-            if team == white_team:
-                white_team.piece_list.append(self)
-            else:
-                black_team.piece_list.append(self)
+            team.piece_list.append(self)
     
     def getMoves(self, board):
         index = self.position
@@ -175,7 +206,7 @@ class Piece:
                 pawnRow = index[0]
                 pawnColumn = index[1]
                 if pawnRow == 1:
-                    if board.grid[pawnRow + 2][pawnColumn] == ' ' and board.grid[pawnRow + 1][pawnColumn] == ' ': 
+                    if board.matrix[pawnRow + 2][pawnColumn] == ' ' and board.matrix[pawnRow + 1][pawnColumn] == ' ': 
                         self.available_moves.append([pawnRow + 2, pawnColumn])
                         self.available_moves.append([pawnRow + 1, pawnColumn])
                         
@@ -186,19 +217,19 @@ class Piece:
                     if board.on_board(position): ##Check if [1,-1] is within [0,8][0,8]
                         if bottom3.index(position) % 2 == 0:  ## If true, piece is there?
                             try:
-                                if board.grid[position[0]][position[1]].team != black_team:
-                                    board.grid[position[0]][position[1]].Killable = True
+                                if board.matrix[position[0]][position[1]].team.colour != 'b':
+                                    board.matrix[position[0]][position[1]].Killable = True
                                     self.available_moves.append([position[0], position[1]])
                             except:
                                 pass
                         else:
-                            if board.grid[position[0]][position[1]] == ' ':
+                            if board.matrix[position[0]][position[1]] == ' ':
                                 self.available_moves.append([position[0], position[1]])
             else:
                 pawn_row = index[0]
                 pawn_column = index[1]
                 if pawn_row == 6:
-                    if board.grid[pawn_row - 2][pawn_column] == ' ' and board.grid[pawn_row - 1][pawn_column] == ' ':
+                    if board.matrix[pawn_row - 2][pawn_column] == ' ' and board.matrix[pawn_row - 1][pawn_column] == ' ':
                             self.available_moves.append([pawn_row - 2, pawn_column])
                             self.available_moves.append([pawn_row - 1, pawn_column])
                 top3 = [[pawn_row - 1, pawn_column + i] for i in range(-1, 2)]
@@ -207,13 +238,13 @@ class Piece:
                     if board.on_board(position):
                         if top3.index(position) % 2 == 0:
                             try:
-                                if board.grid[position[0]][position[1]].team != white_team:
-                                    board.grid[position[0]][position[1]].Killable = True
+                                if board.matrix[position[0]][position[1]].team.colour != 'w':
+                                    board.matrix[position[0]][position[1]].Killable = True
                                     self.available_moves.append([position[0], position[1]])
                             except:
                                 pass
                         else:
-                            if board.grid[position[0]][position[1]] == ' ':
+                            if board.matrix[position[0]][position[1]] == ' ':
                                 self.available_moves.append([position[0], position[1]])
         elif self.type == 'r':
             cross = [[[index[0] + i, index[1]] for i in range(1, 8 - index[0])],
@@ -223,11 +254,11 @@ class Piece:
             for direction in cross:
                 for position in direction:
                     if board.on_board(position):
-                        if board.grid[position[0]][position[1]] == ' ':
+                        if board.matrix[position[0]][position[1]] == ' ':
                             self.available_moves.append([position[0], position[1]])
                         else:
-                            if board.grid[position[0]][position[1]].team.colour != self.team.colour:
-                                board.grid[position[0]][position[1]].Killable = True
+                            if board.matrix[position[0]][position[1]].team.colour != self.team.colour:
+                                board.matrix[position[0]][position[1]].Killable = True
                                 self.available_moves.append([position[0], position[1]])
                             break
         elif self.type == 'b': ## Bishop
@@ -239,11 +270,11 @@ class Piece:
             for direction in diagonals:
                 for position in direction:
                     if board.on_board(position):
-                        if board.grid[position[0]][position[1]] == ' ':
+                        if board.matrix[position[0]][position[1]] == ' ':
                             self.available_moves.append([position[0], position[1]])
                         else:
-                            if board.grid[position[0]][position[1]].team.colour != self.team.colour:
-                                board.grid[position[0]][position[1]].Killable = True
+                            if board.matrix[position[0]][position[1]].team.colour != self.team.colour:
+                                board.matrix[position[0]][position[1]].Killable = True
                                 self.available_moves.append([position[0], position[1]])
                             break
         elif self.type == 'kn':
@@ -251,11 +282,11 @@ class Piece:
                 for j in range(-2, 3):
                     if i ** 2 + j ** 2 == 5:
                         if board.on_board((index[0] + i, index[1] + j)):
-                            if board.grid[index[0] + i][index[1] + j] == ' ':
+                            if board.matrix[index[0] + i][index[1] + j] == ' ':
                                 self.available_moves.append([index[0] + i, index[1] + j])
                             else:
-                                if board.grid[index[0] + i][index[1] + j].team.colour != self.team.colour:
-                                    board.grid[index[0] + i][index[1] + j].Killable = True
+                                if board.matrix[index[0] + i][index[1] + j].team.colour != self.team.colour:
+                                    board.matrix[index[0] + i][index[1] + j].Killable = True
                                     self.available_moves.append([index[0] + i, index[1] + j])
         elif self.type == 'k':
             king_row = index[0] ## Starting king row: 0
@@ -263,11 +294,11 @@ class Piece:
             for y in range(3): ## Example: 1
                 for x in range(3): ## Example: 0
                     if board.on_board((king_row - 1 + y, king_column - 1 + x)): ## Example: 0,3
-                        if board.grid[king_row - 1 + y][king_column - 1 + x] == ' ':
+                        if board.matrix[king_row - 1 + y][king_column - 1 + x] == ' ':
                             self.available_moves.append([king_row - 1 + y, king_column - 1 + x])
                         else:
-                            if board.grid[king_row - 1 + y][king_column - 1 + x].team != self.team: ## Check if piece is on my team
-                                board.grid[king_row - 1 + y][king_column - 1 + x].Killable = True ## If not, allow the king to take it
+                            if board.matrix[king_row - 1 + y][king_column - 1 + x].team != self.team: ## Check if piece is on my team
+                                board.matrix[king_row - 1 + y][king_column - 1 + x].Killable = True ## If not, allow the king to take it
                                 self.available_moves.append([king_row - 1 + y, king_column - 1 + x])
         elif self.type == 'q':
             cross = [[[index[0] + i, index[1]] for i in range(1, 8 - index[0])],
@@ -281,21 +312,21 @@ class Piece:
             for direction in cross:
                 for position in direction:
                     if board.on_board(position):
-                        if board.grid[position[0]][position[1]] == ' ':
+                        if board.matrix[position[0]][position[1]] == ' ':
                             self.available_moves.append([position[0], position[1]])
                         else:
-                            if board.grid[position[0]][position[1]].team.colour != self.team.colour:
-                                board.grid[position[0]][position[1]].Killable = True
+                            if board.matrix[position[0]][position[1]].team.colour != self.team.colour:
+                                board.matrix[position[0]][position[1]].Killable = True
                                 self.available_moves.append([position[0], position[1]])
                             break
             for direction in diagonals:
                 for position in direction:
                     if board.on_board(position):
-                        if board.grid[position[0]][position[1]] == ' ':
+                        if board.matrix[position[0]][position[1]] == ' ':
                             self.available_moves.append([position[0], position[1]])
                         else:
-                            if board.grid[position[0]][position[1]].team.colour != self.team.colour:
-                                board.grid[position[0]][position[1]].Killable = True
+                            if board.matrix[position[0]][position[1]].team.colour != self.team.colour:
+                                board.matrix[position[0]][position[1]].Killable = True
                                 self.available_moves.append([position[0], position[1]])
                             break
         return self.available_moves
@@ -371,42 +402,6 @@ square_names = {
 
 def select_moves(piece):    
     return piece.available_moves
-
-def team_lost(team, board, grid):     # Check if this particular team has any moves left that don't put him into check again, if so: lost
-    team_king_pos = []
-    for i in range(len(board)):
-        for j in range(len(board[0])):
-            piece = board[i][j]
-            piece_pos = [i,j]
-            if piece.type == 'k' and piece.team == team:
-                team_king_pos = piece_pos
-            if piece.type == 'p' and piece.team == white_team:
-                pawn_moves_w(piece_pos, team)
-            if piece.type == 'p' and piece.team == black_team:
-                pawn_moves_b(piece_pos, team)
-            
-            if piece.type == 'r':
-                rook_moves(piece_pos, team)
-            if piece.type == 'b':
-                bishop_moves(piece_pos, team)
-            if piece.type == 'kn':
-                knight_moves(piece_pos, team)
-            if piece.type == 'q':
-                queen_moves(piece_pos, team)
-    
-    current_board = board
-    
-    for move in team.possible_moves:
-        x,y = move[0][1]
-        row, col = team_king_pos[0][1]
-        Do_Move(board, piece, x, y, row, col, (col, row), (y, x), WIN)
-        if check_king(team, board, grid) == True:
-            board = current_board
-            print("Still in check, rerun!")
-    
-    ## We need to calculate if any of our available moves gets us out of check
-    ## Best way to do that is: 
-    #for move in team.possible_moves:
     
 WIDTH = 800
 
@@ -422,6 +417,7 @@ class Node:
     def __init__(self, row, col, width):
         self.row = row
         self.col = col
+        self.pass_num = 0
         self.x = int(row * width)
         self.y = int(col * width)
         self.colour = WHITE
@@ -457,12 +453,12 @@ def draw_grid(win, rows, width):
         for j in range(rows):
             pygame.draw.line(win, BLACK, (j * gap, 0), (j * gap, width))
 
-def update_display(board, win, grid, rows, width):
+def update_display(board, WIN, grid, rows, width):
     for row in grid:
         for spot in row:
-            spot.draw(win)
-            spot.setup(board, win)
-    draw_grid(win, rows, width)
+            spot.draw(WIN)
+            spot.setup(board, WIN)
+    draw_grid(WIN, rows, width)
     pygame.display.update()
 
 def Find_Node(pos, WIDTH):
@@ -486,18 +482,27 @@ def remove_highlight(grid):
                 grid[i][j].colour = GREY
     return grid
 
-game_board = Board(False)
-sim_board = Board(True)
 
 def main(WIN, WIDTH):
     pygame.init()
-    moves = 0
     selected = False
     piece_to_move=[]
-    grid = make_grid(8, WIDTH)
-    turn = white_team
     selected_piece = ' '
+    grid = make_grid(8, WIDTH)
+    
+    white_team = Team('w', [], [], False, ' ')
+    black_team = Team('b', [], [], False, ' ')
+    white_team_sim = Team('w', [], [], False, ' ')
+    black_team_sim = Team('b', [], [], False, ' ')
+    game_board = Board(False, white_team, black_team, grid, WIN, WIDTH)
+    sim_board = Board(True, white_team_sim, black_team_sim, grid, WIN, WIDTH)
+    game_board.current_turn = game_board.white
+    sim_board.current_turn = sim_board.white
     game_board.update_moveSet()
+    sim_board.update_moveSet()
+    other_team = game_board.black
+    other_team_sim = sim_board.black
+    
     while True:
         pygame.time.delay(50) ## Stops CPU dying
         for event in pygame.event.get():
@@ -508,12 +513,16 @@ def main(WIN, WIDTH):
                 pos = pygame.mouse.get_pos()
                 x, y = Find_Node(pos, WIDTH)
                 if selected == False:
-                    selected_piece = game_board.grid[x][y]
+                    selected_piece = game_board.matrix[x][y]
+                    selected_piece_sim = sim_board.matrix[x][y]
                     if selected_piece == ' ':
                         pass
                     else:
-                        if selected_piece.team == turn:
-                            possible = selected_piece.available_moves
+                        if selected_piece.team == game_board.current_turn:
+                            if game_board.current_turn.in_check == True:
+                                print("in-check")
+                                game_board.current_turn.get_legalMoves(selected_piece, game_board, game_board.current_turn, other_team, game_board.current_turn, other_team, grid, WIN)
+                            possible = selected_piece.available_moves  
                             for position in possible:
                                 row, col = position
                                 grid[row][col].colour = BLUE
@@ -523,53 +532,34 @@ def main(WIN, WIDTH):
                             selected_piece = []
                             piece_to_move = []
                             print('Can\'t select')
-                        #print(piece_to_move)
                 else:
                     if [x,y] in selected_piece.available_moves:
-                        if turn.in_check == False:
-                            row, col = piece_to_move
-                            game_board.deselect()
-                            remove_highlight(grid)
-                            game_board.Do_Move(selected_piece, x, y, row, col, (col, row), (y, x), WIN)
-                            moves += 1
-                            game_board.update_moveSet()
-                            in_check = game_board.check_king(turn, grid)
-                            if turn == white_team:
-                                turn = black_team
-                            else:
-                                turn = white_team
-                            turn.in_check = in_check
-                           # print(convert_to_readable(board))
+                        row, col = piece_to_move
+                        game_board.deselect()
+                        remove_highlight(grid)
+                        game_board.Do_Move(selected_piece, x, y, row, col, WIN, grid, False)
+                        game_board.moves += 1
+                        game_board.update_moveSet()
+                        in_check = game_board.current_turn.check_king(other_team, grid)
+                        if game_board.current_turn == game_board.white:
+                            game_board.current_turn = game_board.black
+                            other_team = game_board.white
                         else:
-                            if turn.get_legalMoves(grid) == False:
-                                print("Not a legal move!")
-                                game_board.deselect()
-                                remove_highlight(grid)
-                                selected = False
-                                selected_piece = []
-                            else:
-                                row, col = piece_to_move
-                                game_board.deselect()
-                                remove_highlight(grid)
-                                game_board.Do_Move(selected_piece, x, y, row, col, (col, row), (y, x), WIN)
-                                moves += 1
-                                game_board.update_moveSet()
-                                in_check = game_board.check_king(turn, grid)
-                                if turn == white_team:
-                                    turn = black_team
-                                else:
-                                    turn = white_team
-                                turn.in_check = in_check
-                               # print(convert_to_readable(board))
+                            game_board.current_turn = game_board.white
+                            other_team = game_board.black
+                        game_board.current_turn.in_check = in_check
                     else:
                         game_board.deselect()
+                        sim_board.deselect()
                         remove_highlight(grid)
                         selected = False
                         selected_piece = []
+                        piece_to_move = []
                         print("Invalid move")
                     selected = False
-                    
-            update_display(game_board.grid, WIN, grid, 8, WIDTH)
+            elif event.type == pygame.KEYDOWN:
+                game_board.Reverse_Move(game_board.last_moved_piece, False)
+            update_display(game_board.matrix, WIN, grid, 8, WIDTH)
             
     
 main(WIN, WIDTH)   

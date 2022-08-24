@@ -24,3 +24,11 @@ runfile('C:/Users/jorda/.spyder-py3/temp.py', wdir='C:/Users/jorda/.spyder-py3')
 
 ## ---(Sun Aug 14 00:52:03 2022)---
 runfile('C:/Users/jorda/.spyder-py3/temp.py', wdir='C:/Users/jorda/.spyder-py3')
+
+## ---(Sat Aug 20 13:44:06 2022)---
+runfile('C:/Users/jorda/.spyder-py3/temp.py', wdir='C:/Users/jorda/.spyder-py3')
+
+## ---(Sat Aug 20 17:54:43 2022)---
+runfile('C:/Users/jorda/.spyder-py3/temp.py', wdir='C:/Users/jorda/.spyder-py3')
+runcell(0, 'C:/Users/jorda/.spyder-py3/temp.py')
+runfile('C:/Users/jorda/.spyder-py3/temp.py', wdir='C:/Users/jorda/.spyder-py3')
