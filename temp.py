@@ -574,9 +574,6 @@ def main(WIN, WIDTH):
                                 queenside_rook = game_board.matrix[x][y - 2] ## Two side steps over from the king's new position is the rook
                                 game_board.Do_Move(queenside_rook, x, y + 1, x, y - 2, WIN, grid, False)
                                 game_board.update_moveSet()
-                                
-                        print(game_board.current_turn.can_castle_kingside)
-                        print(game_board.current_turn.can_castle_queenside)
                         
                         in_check = game_board.current_turn.check_king(other_team, grid)
                         if game_board.current_turn == game_board.white:
