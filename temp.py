@@ -12,6 +12,7 @@ class Board:
         self.matrix = [[' ' for i in range(8)] for i in range(8)]
         self.last_position = []
         self.this_position = []
+        self.last_piece_taken = ' '
         self.white = white
         self.black = black
         self.WIDTH = WIDTH
@@ -19,10 +20,10 @@ class Board:
         self.WIN = WIN
         self.moves = 0
         self.current_turn = None
-        self.starting_order = {(0, 0): Piece(self.black, 'r', 'b_rook.png', [], False), (0, 1): Piece(self.black, 'kn', 'b_knight.png', [], False),
+        self.starting_order = {(0, 0): Piece(self.black, 'r', 'b_rook.png', [], False, 'q'), (0, 1): Piece(self.black, 'kn', 'b_knight.png', [], False),
                           (0, 2): Piece(self.black, 'b', 'b_bishop.png', [], False), (0, 4): Piece(self.black, 'k', 'b_king.png', [], False),
                           (0, 3): Piece(self.black, 'q', 'b_queen.png', [], False), (0, 5): Piece(self.black, 'b', 'b_bishop.png', [], False),
-                          (0, 6): Piece(self.black, 'kn', 'b_knight.png', [], False), (0, 7): Piece(self.black, 'r', 'b_rook.png', [], False),
+                          (0, 6): Piece(self.black, 'kn', 'b_knight.png', [], False), (0, 7): Piece(self.black, 'r', 'b_rook.png', [], False, 'k'),
                           (1, 0): Piece(self.black, 'p', 'b_pawn.png', [], False), (1, 1): Piece(self.black, 'p', 'b_pawn.png', [], False),
                           (1, 2): Piece(self.black, 'p', 'b_pawn.png', [], False), (1, 3): Piece(self.black, 'p', 'b_pawn.png', [], False),
                           (1, 4): Piece(self.black, 'p', 'b_pawn.png', [], False), (1, 5): Piece(self.black, 'p', 'b_pawn.png', [], False),
@@ -41,10 +42,10 @@ class Board:
                           (6, 2): Piece(self.white, 'p', 'w_pawn.png', [], False), (6, 3): Piece(self.white, 'p', 'w_pawn.png', [], False),
                           (6, 4): Piece(self.white, 'p', 'w_pawn.png', [], False), (6, 5): Piece(self.white, 'p', 'w_pawn.png', [], False),
                           (6, 6): Piece(self.white, 'p', 'w_pawn.png', [], False), (6, 7): Piece(self.white, 'p', 'w_pawn.png', [], False),
-                          (7, 0): Piece(self.white, 'r', 'w_rook.png', [], False), (7, 1): Piece(self.white, 'kn', 'w_knight.png', [], False),
+                          (7, 0): Piece(self.white, 'r', 'w_rook.png', [], False, 'q'), (7, 1): Piece(self.white, 'kn', 'w_knight.png', [], False),
                           (7, 2): Piece(self.white, 'b', 'w_bishop.png', [], False), (7, 3): Piece(self.white, 'q', 'w_queen.png', [], False),
                           (7, 4): Piece(self.white, 'k', 'w_king.png', [], False), (7, 5): Piece(self.white, 'b', 'w_bishop.png', [], False),
-                          (7, 6): Piece(self.white, 'kn', 'w_knight.png', [], False), (7, 7): Piece(self.white, 'r', 'w_rook.png', [], False),}
+                          (7, 6): Piece(self.white, 'kn', 'w_knight.png', [], False), (7, 7): Piece(self.white, 'r', 'w_rook.png', [], False, 'k'),}
         for i in range(8):
             for j in range(8):
                 self.matrix[i][j] = self.starting_order[i,j]
@@ -75,12 +76,15 @@ class Board:
                         pass
     def Do_Move(self, piece, x, y, row, col, WIN, grid, simulated):
         piece.position = [x,y]
+        last_piece = ' '
         if self.matrix[x][y] != ' ':      # Taking a piece
             for taken_piece in self.matrix[x][y].team.piece_list:
-                if taken_piece.type == 'p' and taken_piece == self.matrix[x][y]:
+                if taken_piece == self.matrix[x][y]:
                     self.matrix[x][y].team.piece_list.remove(taken_piece)
+                    last_piece = taken_piece
+                    break
         self.last_position = [row, col]
-        self.this_position = [x, y]
+        self.this_position = [last_piece, x, y]
         self.last_moved_piece = piece
         self.matrix[x][y] = self.matrix[row][col]
         self.matrix[row][col] = ' '
@@ -99,13 +103,12 @@ class Board:
             if self.matrix[row][col].team == self.black:
                 return True, self.black
     def Reverse_Move(self, piece, sim):
-        x,y = self.this_position
+        last_piece,x,y = self.this_position
         row,col = self.last_position
         self.matrix[row][col] = piece
-        self.matrix[x][y] = ' '
+        self.matrix[x][y] = last_piece
         piece.position = [row,col]
         self.moves = self.moves - 1
-        self.update_moveSet()
         if sim != True:
             if self.current_turn == self.white:
                 self.current_turn = self.black
@@ -138,6 +141,8 @@ class Team:
         self.in_check = in_check
         self.possible_moves = possible_moves
         self.King = King
+        self.can_castle_queenside = True
+        self.can_castle_kingside = True
     
     def update_piece_list(self, original_piece, new_piece):
         current_piece = self.piece_list.index(original_piece)
@@ -176,19 +181,20 @@ class Team:
                 moves_to_remove.append(move)
             else:
                 board.Reverse_Move(piece, True)
-                continue
             
         for move in reversed(piece.available_moves):
             if move in moves_to_remove:
                 piece.available_moves.remove(move)
 class Piece:
-    def __init__(self, team, type, image, available_moves, add = True, Killable=False, has_moved=False):
+    def __init__(self, team, type, image, available_moves, add = True, side = 'n'):
         self.team = team
         self.type = type
-        self.Killable = Killable
+        self.has_moved = False
+        self.Killable = False
         self.image = pygame.image.load(image)
         self.image = pygame.transform.scale(self.image, (100,100))
         self.available_moves = available_moves
+        self.side = side
         self.position = []
         if self.type == 'k':
             self.team.King = self
@@ -261,7 +267,7 @@ class Piece:
                                 board.matrix[position[0]][position[1]].Killable = True
                                 self.available_moves.append([position[0], position[1]])
                             break
-        elif self.type == 'b': ## Bishop
+        elif self.type == 'b':
             diagonals = [[[index[0] + i, index[1] + i] for i in range(1, 8)],
                          [[index[0] + i, index[1] - i] for i in range(1, 8)],
                          [[index[0] - i, index[1] + i] for i in range(1, 8)],
@@ -300,6 +306,15 @@ class Piece:
                             if board.matrix[king_row - 1 + y][king_column - 1 + x].team != self.team: ## Check if piece is on my team
                                 board.matrix[king_row - 1 + y][king_column - 1 + x].Killable = True ## If not, allow the king to take it
                                 self.available_moves.append([king_row - 1 + y, king_column - 1 + x])
+            ## Castling
+            if self.team.can_castle_kingside:
+                if board.matrix[king_row][king_column + 1] == ' ' and board.matrix[king_row][king_column + 2] == ' ':
+                    self.available_moves.append([king_row, king_column + 2])
+            if self.team.can_castle_queenside:
+                if board.matrix[king_row][king_column - 1] == ' ' and board.matrix[king_row][king_column - 2] == ' ':
+                    self.available_moves.append([king_row, king_column - 2])
+            
+            
         elif self.type == 'q':
             cross = [[[index[0] + i, index[1]] for i in range(1, 8 - index[0])],
                      [[index[0] - i, index[1]] for i in range(1, index[0] + 1)],
@@ -492,16 +507,10 @@ def main(WIN, WIDTH):
     
     white_team = Team('w', [], [], False, ' ')
     black_team = Team('b', [], [], False, ' ')
-    white_team_sim = Team('w', [], [], False, ' ')
-    black_team_sim = Team('b', [], [], False, ' ')
     game_board = Board(False, white_team, black_team, grid, WIN, WIDTH)
-    sim_board = Board(True, white_team_sim, black_team_sim, grid, WIN, WIDTH)
     game_board.current_turn = game_board.white
-    sim_board.current_turn = sim_board.white
     game_board.update_moveSet()
-    sim_board.update_moveSet()
     other_team = game_board.black
-    other_team_sim = sim_board.black
     
     while True:
         pygame.time.delay(50) ## Stops CPU dying
@@ -514,13 +523,11 @@ def main(WIN, WIDTH):
                 x, y = Find_Node(pos, WIDTH)
                 if selected == False:
                     selected_piece = game_board.matrix[x][y]
-                    selected_piece_sim = sim_board.matrix[x][y]
                     if selected_piece == ' ':
                         pass
                     else:
                         if selected_piece.team == game_board.current_turn:
                             if game_board.current_turn.in_check == True:
-                                print("in-check")
                                 game_board.current_turn.get_legalMoves(selected_piece, game_board, game_board.current_turn, other_team, game_board.current_turn, other_team, grid, WIN)
                             possible = selected_piece.available_moves  
                             for position in possible:
@@ -540,6 +547,37 @@ def main(WIN, WIDTH):
                         game_board.Do_Move(selected_piece, x, y, row, col, WIN, grid, False)
                         game_board.moves += 1
                         game_board.update_moveSet()
+                        
+                        ## Add in Castling check
+                        ## Step 1: Check if moved piece was a rook and that the team that moved can castle in any particular direction
+                        if (game_board.current_turn.can_castle_kingside == True or game_board.current_turn.can_castle_queenside == True):
+                            if selected_piece.type == 'r':   
+                                ## Step 2: Check if kingside or kingside rook with variable
+                                if selected_piece.side == 'k': ## Kingside Rook
+                                    game_board.current_turn.can_castle_kingside = False  ## Step 3: Set castling availability to false in all cases
+                                else:
+                                    game_board.current_turn.can_castle_queenside = False
+                            elif selected_piece.type == 'k':
+                                ## In this case, any king moves immediately disallows castling on either side
+                                game_board.current_turn.can_castle_kingside = False
+                                game_board.current_turn.can_castle_queenside = False        
+                        
+                        ## Add in castling functionality
+                        ## Step 1: Check if the piece moved was a king and if it moved two spaces to the right or two spaces to the left
+                        if selected_piece.type == 'k':
+                            if y == (col + 2): ## Kingside castle
+                                ## Step 2: Move the rook over 1 step to the left of the king
+                                kingside_rook = game_board.matrix[x][y + 1] ## One side step over from the king's new position is the rook
+                                game_board.Do_Move(kingside_rook, x, y - 1, x, y + 1, WIN, grid, False)
+                                game_board.update_moveSet()
+                            elif y == (col - 2): ## Queenside castle
+                                queenside_rook = game_board.matrix[x][y - 2] ## Two side steps over from the king's new position is the rook
+                                game_board.Do_Move(queenside_rook, x, y + 1, x, y - 2, WIN, grid, False)
+                                game_board.update_moveSet()
+                                
+                        print(game_board.current_turn.can_castle_kingside)
+                        print(game_board.current_turn.can_castle_queenside)
+                        
                         in_check = game_board.current_turn.check_king(other_team, grid)
                         if game_board.current_turn == game_board.white:
                             game_board.current_turn = game_board.black
@@ -550,7 +588,6 @@ def main(WIN, WIDTH):
                         game_board.current_turn.in_check = in_check
                     else:
                         game_board.deselect()
-                        sim_board.deselect()
                         remove_highlight(grid)
                         selected = False
                         selected_piece = []
